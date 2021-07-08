@@ -1,5 +1,9 @@
 import React from 'react';
-import axios from 'axios';
+// import axios from 'axios';
+import { useQuery } from '@apollo/react-hooks';
+import { GET_PORTFOLIO } from '@/apollo/queries';
+import withApollo from '@/hoc/withApollo';
+import { getDataFromTree } from '@apollo/react-ssr';
 
 // const PortfolioDetail = () => {
 //   const router = useRouter();
@@ -8,35 +12,52 @@ import axios from 'axios';
 //   return <h1>I am detail page with ID: {id}</h1>;
 // };
 
-const fetchPortfolio = async (id) => {
-  const query = `query Portfolio($id:ID){
-    portfolio(id:$id){
-     _id
-      company
-      companyWebsite
-      location
-      title
-      endDate
-      startDate
-      description
-      jobTitle
-    }
-  }`;
-  const variables = { id };
-  const {
-    data: {
-      data: { portfolio },
-    },
-  } = await axios.post('http://localhost:3000/graphql', {
-    query,
-    variables,
-  });
-  return portfolio;
-};
+// const fetchPortfolio = async (id) => {
+//   const query = `query Portfolio($id:ID){
+//     portfolio(id:$id){
+//      _id
+//       company
+//       companyWebsite
+//       location
+//       title
+//       endDate
+//       startDate
+//       description
+//       jobTitle
+//     }
+//   }`;
+//   const variables = { id };
+//   const {
+//     data: {
+//       data: { portfolio },
+//     },
+//   } = await axios.post('http://localhost:3000/graphql', {
+//     query,
+//     variables,
+//   });
+//   return portfolio;
+// };
 
-const PortfolioDetail = ({
-  data: { title, company, location, endDate, startDate, description, jobTitle },
-}) => {
+const PortfolioDetail = ({ query: { id } }) => {
+  const { loading, error, data } = useQuery(GET_PORTFOLIO, {
+    variables: { id },
+  });
+  const portfolio = (data && data.portfolio) || {};
+
+  if (loading) {
+    return 'Loading...';
+  }
+
+  const {
+    title,
+    company,
+    location,
+    endDate,
+    startDate,
+    description,
+    jobTitle,
+  } = portfolio;
+
   return (
     <div className='portfolio-detail'>
       <div className='container'>
@@ -78,10 +99,9 @@ const PortfolioDetail = ({
   );
 };
 
+//here we recieve query from url parameters and not througgh any component, here query is refered to req.query.params.id
 PortfolioDetail.getInitialProps = async ({ query }) => {
-  const { id } = query;
-  const data = await fetchPortfolio(id);
-  return { data };
+  return { query };
 };
 
-export default PortfolioDetail;
+export default withApollo(PortfolioDetail, { getDataFromTree });
